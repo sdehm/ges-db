@@ -1,10 +1,12 @@
 package store
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 
 	badger "github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/ristretto/z"
 )
 
 type Store struct {
@@ -84,4 +86,21 @@ func (b *Store) Iterate() {
 		}
 		return nil
 	})
+}
+
+func (b *Store) Stream() error {
+	stream := b.db.NewStream()
+
+	stream.Send = func(buf *z.Buffer) error {
+		list, err := badger.BufferToKVList(buf)
+		if err != nil {
+			return err
+		}
+		for _, kv := range list.Kv {
+			fmt.Printf("key=%d, value=%s\n", binary.LittleEndian.Uint64(kv.Key), kv.Value)
+		}
+		return nil
+	}
+
+	return stream.Orchestrate(context.Background())
 }

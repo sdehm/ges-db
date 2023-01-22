@@ -28,4 +28,7 @@ func main() {
 
 	badger.Iterate()
 
+	fmt.Println("streaming")
+	_ = badger.Stream()
+
 }
