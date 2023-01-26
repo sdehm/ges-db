@@ -14,6 +14,16 @@ type Store struct {
 	seq *badger.Sequence
 }
 
+func uint64ToBytes(u uint64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, u)
+	return b
+}
+
+func bytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
+
 func NewStore(path string) (*Store, error) {
 	db, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
@@ -34,22 +44,22 @@ func (b *Store) Close() {
 	b.db.Close()
 }
 
-func (b *Store) Set(value []byte) error {
+func (b *Store) Set(value []byte) ([]byte, error) {
 	s, err := b.seq.Next()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	key := make([]byte, 8)
-	binary.LittleEndian.PutUint64(key, s)
-	return b.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(key, value)
+	k := uint64ToBytes(s)
+	err =  b.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(k, value)
 	})
+	return k, err
 }
 
-func (b *Store) Get(key string) ([]byte, error) {
+func (b *Store) Get(key []byte) ([]byte, error) {
 	var value []byte
 	err := b.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(key))
+		item, err := txn.Get(key)
 		var v []byte
 		if err != nil {
 			return err
