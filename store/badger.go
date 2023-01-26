@@ -25,7 +25,15 @@ func bytesToUint64(b []byte) uint64 {
 }
 
 func NewStore(path string) (*Store, error) {
-	db, err := badger.Open(badger.DefaultOptions(path))
+	return newStore(badger.DefaultOptions(path))
+}
+
+func NewStoreMemory() (*Store, error) {
+	return newStore(badger.DefaultOptions("").WithInMemory(true))
+}
+
+func newStore(opts badger.Options) (*Store, error) {
+	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
 	}

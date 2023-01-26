@@ -1,12 +1,11 @@
 package store
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestSetGet(t *testing.T) {
-	s, err := NewStore("test")
+	s, err := NewStoreMemory()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -16,7 +15,7 @@ func TestSetGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(bytesToUint64(k))
+
 	value, err := s.Get(k)
 	if err != nil {
 		t.Fatal(err)
