@@ -26,9 +26,13 @@ func main() {
 	}
 	wg.Wait()
 
-	badger.Iterate()
+	// badger.Iterate(func(k []byte, v []byte) {
+	// 	fmt.Printf("key=%d, value=%s\n", k, v)
+	// })
 
 	fmt.Println("streaming")
-	_ = badger.Stream()
+	_ = badger.Stream(func(k []byte, v []byte) {
+		fmt.Printf("key=%d, value=%s\n", k, v)
+	})
 
 }

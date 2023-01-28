@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 
 	badger "github.com/dgraph-io/badger/v3"
 	"github.com/dgraph-io/ristretto/z"
@@ -57,9 +56,13 @@ func (b *Store) Set(value []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	prefix := []byte("ges")
+	e := badger.NewEntry(prefix, value)
+	e.Key = append(prefix, uint64ToBytes(s)...)
 	k := uint64ToBytes(s)
 	err =  b.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(k, value)
+		// return txn.Set(k, value)
+		return txn.SetEntry(e)
 	})
 	return k, err
 }
@@ -86,16 +89,16 @@ func (b *Store) Clear() error {
 	return b.db.DropAll()
 }
 
-func (b *Store) Iterate() {
+func (b *Store) Iterate(f func (key []byte, value []byte)) {
 	b.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte("ges")
 		it := txn.NewIterator(opts)
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			k := binary.LittleEndian.Uint64(item.Key())
 			err := item.Value(func(v []byte) error {
-				fmt.Printf("key=%d, value=%s\n", k, v)
+				f(item.Key(), v)
 				return nil
 			})
 			if err != nil {
@@ -106,8 +109,9 @@ func (b *Store) Iterate() {
 	})
 }
 
-func (b *Store) Stream() error {
+func (b *Store) Stream(f func (key []byte, value []byte)) error {
 	stream := b.db.NewStream()
+	stream.Prefix = []byte("ges")
 
 	stream.Send = func(buf *z.Buffer) error {
 		list, err := badger.BufferToKVList(buf)
@@ -115,7 +119,7 @@ func (b *Store) Stream() error {
 			return err
 		}
 		for _, kv := range list.Kv {
-			fmt.Printf("key=%d, value=%s\n", binary.LittleEndian.Uint64(kv.Key), kv.Value)
+			f(kv.Key, kv.Value)
 		}
 		return nil
 	}
