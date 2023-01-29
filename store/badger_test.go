@@ -12,7 +12,7 @@ func TestSetGet(t *testing.T) {
 	}
 	defer s.Close()
 
-	k, err := s.Set([]byte("hello"))
+	k, err := s.Set([]byte("hello"), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestSetGet2Values(t *testing.T) {
 	}
 	defer s.Close()
 
-	k, err := s.Set([]byte("hello"))
+	k, err := s.Set([]byte("hello"), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestSetGet2Values(t *testing.T) {
 		t.Fatal("value not equal")
 	}
 
-	k2, err := s.Set([]byte("world"))
+	k2, err := s.Set([]byte("world"), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,12 +76,12 @@ func TestIterate(t *testing.T) {
 	}
 	defer s.Close()
 
-	k, err := s.Set([]byte("hello"))
+	k, err := s.Set([]byte("hello"), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	k2, err := s.Set([]byte("world"))
+	k2, err := s.Set([]byte("world"), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,10 +98,10 @@ func TestIterate(t *testing.T) {
 	if values[1] != "world" {
 		t.Fatalf("value not equal: %s", values[1])
 	}
-	if string(keys[0]) != string(append([]byte("ges"), k...)) {
+	if string(keys[0]) != string(k) {
 		t.Fatalf("key not equal: %d", keys[0])
 	}
-	if string(keys[1]) != string(append([]byte("ges"), k2...)) {
+	if string(keys[1]) != string(k2) {
 		t.Fatalf("key not equal: %d", keys[1])
 	}
 }

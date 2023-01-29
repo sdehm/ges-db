@@ -23,6 +23,14 @@ func bytesToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }
 
+func makeKey(p string, t string, i uint64) []byte {
+	return append([]byte(p), append([]byte(t), uint64ToBytes(i)...)...)
+}
+
+func keyToId(key []byte) uint64 {
+	return bytesToUint64(key[len(key)-8:])
+}
+
 func NewStore(path string) (*Store, error) {
 	return newStore(badger.DefaultOptions(path))
 }
@@ -51,15 +59,13 @@ func (b *Store) Close() {
 	b.db.Close()
 }
 
-func (b *Store) Set(value []byte) ([]byte, error) {
+func (b *Store) Set(value []byte, t string) ([]byte, error) {
 	s, err := b.seq.Next()
 	if err != nil {
 		return nil, err
 	}
-	prefix := []byte("ges")
-	e := badger.NewEntry(prefix, value)
-	e.Key = append(prefix, uint64ToBytes(s)...)
-	k := uint64ToBytes(s)
+	k := makeKey("event", t, s)
+	e := badger.NewEntry(k, value)
 	err =  b.db.Update(func(txn *badger.Txn) error {
 		// return txn.Set(k, value)
 		return txn.SetEntry(e)
@@ -92,7 +98,7 @@ func (b *Store) Clear() error {
 func (b *Store) Iterate(f func (key []byte, value []byte)) {
 	b.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = []byte("ges")
+		opts.Prefix = []byte("event")
 		it := txn.NewIterator(opts)
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
@@ -111,7 +117,7 @@ func (b *Store) Iterate(f func (key []byte, value []byte)) {
 
 func (b *Store) Stream(f func (key []byte, value []byte)) error {
 	stream := b.db.NewStream()
-	stream.Prefix = []byte("ges")
+	stream.Prefix = []byte("event")
 
 	stream.Send = func(buf *z.Buffer) error {
 		list, err := badger.BufferToKVList(buf)

@@ -21,7 +21,7 @@ func main() {
 		i := i
 		go func() {
 			defer wg.Done()
-			_, _ = badger.Set([]byte(fmt.Sprintf("value%d", i)))
+			_, _ = badger.Set([]byte(fmt.Sprintf("value%d", i)), "test")
 		}()
 	}
 	wg.Wait()
